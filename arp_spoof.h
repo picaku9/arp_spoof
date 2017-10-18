@@ -38,6 +38,7 @@ struct spoof_list {
 	uint8_t sender_ip_addr[4];
 	uint8_t sender_ether_addr[6];
 	uint8_t target_ip_addr[4];
+	uint8_t target_ether_addr[4];
 }
 
 struct rq_packet {
