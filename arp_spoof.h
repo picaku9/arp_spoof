@@ -52,5 +52,5 @@ void get_dev_ether_addr(uint8_t *ether, char *dev);
 void get_dev_ip_addr(uint8_t *ip, char *dev);
 void rq_arp(struct rq_packet* p);
 void print_arp(struct rq_packet* rq_p);
-void send_recv_arp(struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether);
-void send_arp_rply(handle, &rp_p, sp_list, my_ether);
+void send_recv_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether, int i);
+void send_arp_rply(pcap_t *handle, struct rq_packet* rp_p, uint8_t *sender_ether, struct spoof_list *sp_list, uint8_t *my_ether, int i);
