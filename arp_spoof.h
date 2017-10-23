@@ -8,10 +8,19 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define LIBNET_ARP_H            0x08    /**< ARP header w/o addrs: 8 bytes */
 #define LIBNET_ARP_ETH_IP_H     0x1c    /**< ARP w/ ETH and IP:   28 bytes */
 #define ETHER_ADDR_LEN 6 
+
+#define infect_time 5 // 5초마다 감염
+
+struct thread_spoof_arg {
+	pcap_t *handle;
+	struct spoof_list list;
+	uint8_t my_ether[6];
+}
 
 //libnet_header 참고 이더넷 구조체
 
@@ -53,5 +62,6 @@ void get_dev_ether_addr(uint8_t *ether, char *dev);
 void get_dev_ip_addr(uint8_t *ip, char *dev);
 void rq_arp(struct rq_packet* p);
 void print_arp(struct rq_packet* rq_p);
-void send_recv_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether, int i);
-void send_arp_rply(pcap_t *handle, struct rq_packet* rp_p, uint8_t *sender_ether, struct spoof_list *sp_list, uint8_t *my_ether, int i);
+void send_recv_target_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp_list, uint8_t *my_ip, uint8_t *my_ether);
+void send_arp_rply(pcap_t *handle, struct spoof_list *sp_list, uint8_t *my_ether);
+void* thread_reply(void *arg);
