@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 	for(int i = 0, i<sp_len ; i++) {
 		send_arp_rply(handle, sp_list[i], my_ether);
 	}
-	
+
 	//3. Thread reply.
 	pthread_t th[100];
 	struct thread_spoof_arg sp_p[100]; //(pcap_t *handle, struct spoof_list list, my_ether) each thread.
@@ -124,6 +124,7 @@ int main(int argc, char *argv[]) {
 
 	//5. repair.
 	//not yet
+	
 	//6. free
 	int status;
 	for(int i=0;i<sp_len;i++){

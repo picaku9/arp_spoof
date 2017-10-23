@@ -42,9 +42,9 @@ void get_dev_ip_addr(uint8_t *ip, char *dev) {
 }
 
 void rq_arp(struct rq_packet* p) {
-	p->eth_header.ether_type = htons(0x0806);
+	p->eth_header.ether_type = htons(ETHERTYPE_ARP);
 	p->arp_p.arp_hw = htons(1);
-	p->arp_p.arp_pro = htons(0x0800);
+	p->arp_p.arp_pro = htons(ETHERTYPE_IP);
 	p->arp_p.arp_hlen = (uint8_t)6;
 	p->arp_p.arp_plen = (uint8_t)4;
 	p->arp_p.arp_op = (uint16_t)1; //request
@@ -103,7 +103,7 @@ void send_recv_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_list *sp
 			tmp = pcap_next_ex(handle, &header, &get_packet);
 			if(tmp<1) continue;
 			tmp_eth = (struct libnet_ethernet_hdr *)get_packet;
-			if(ntohs(tmp_eth->ether_type) != 0X0806) continue;
+			if(ntohs(tmp_eth->ether_type) != ETHERTYPE_ARP) continue;
 			tmp_arp = (struct ARP_Header *)(get_packet + sizeof(libnet_ethernet_hdr));
 			if(ntohs(tmp_arp->arp_hw) == 0x0001 && ntohs(tmp_arp->arp_op) == 0x2) {
 				if(tmp_arp->source_ip_addr == rq_p.arp_p.dest_ip_addr) {
@@ -146,7 +146,7 @@ void send_recv_target_arp(pcap_t *handle, struct rq_packet* rq_p, struct spoof_l
 			tmp = pcap_next_ex(handle, &header, &get_packet);
 			if(tmp<1) continue;
 			tmp_eth = (struct libnet_ethernet_hdr *)get_packet;
-			if(ntohs(tmp_eth->ether_type) != 0X0806) continue;
+			if(ntohs(tmp_eth->ether_type) != ETHERTYPE_ARP) continue;
 			tmp_arp = (struct ARP_Header *)(get_packet + sizeof(libnet_ethernet_hdr));
 			if(ntohs(tmp_arp->arp_hw) == 0x0001 && ntohs(tmp_arp->arp_op) == 0x2) {
 				if(tmp_arp->source_ip_addr == rq_p.arp_p.dest_ip_addr) {
@@ -177,9 +177,9 @@ void send_arp_rply(pcap_t *handle, struct spoof_list *sp_list, uint8_t *my_ether
 	memcpy(rp_p->arp_p.dest_ether_addr, sp_list->sender_ether_addr, 6);
 	rp_p->arp_p.arp_op = htons(2); //reply
 
-	rp_p->eth_header.ether_type = htons(0x0806);
+	rp_p->eth_header.ether_type = htons(ETHERTYPE_ARP);
 	rp_p->arp_p.arp_hw = htons(1);
-	rp_p->arp_p.arp_pro = htons(0x0800);
+	rp_p->arp_p.arp_pro = htons(ETHERTYPE_IP);
 	rp_p->arp_p.arp_hlen = (uint8_t)6;
 	rp_p->arp_p.arp_plen = (uint8_t)4;
 

@@ -13,6 +13,8 @@
 #define LIBNET_ARP_H            0x08    /**< ARP header w/o addrs: 8 bytes */
 #define LIBNET_ARP_ETH_IP_H     0x1c    /**< ARP w/ ETH and IP:   28 bytes */
 #define ETHER_ADDR_LEN 6 
+#define ETHERTYPE_ARP           0x0806  /* addr. resolution protocol */
+#define ETHERTYPE_IP            0x0800  /* IP protocol */
 
 #define infect_time 5 // 5초마다 감염
 
